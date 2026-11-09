@@ -1,0 +1,14 @@
+# Credenciales y datos locales
+config/config.php
+.env
+public/uploads/*
+!public/uploads/.htaccess
+
+# Base de datos de la demo (SQLite) y archivos internos
+storage/*
+!storage/.htaccess
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
