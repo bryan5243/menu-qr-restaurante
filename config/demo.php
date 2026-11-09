@@ -64,6 +64,7 @@ return [
         ['slug' => 'entradas', 'name' => 'Entradas', 'kind' => 'entradas', 'description' => 'Para abrir el apetito mientras llega lo bueno.'],
         ['slug' => 'ceviches', 'name' => 'Ceviches', 'kind' => 'ceviches', 'description' => 'Con limón, cebolla, tomate y culantro, como se hacen en la costa.'],
         ['slug' => 'platos-fuertes', 'name' => 'Platos fuertes', 'kind' => 'platos', 'description' => 'Servidos con arroz, patacones o maduro, según el plato.'],
+        ['slug' => 'asados', 'name' => 'Asados', 'kind' => 'platos', 'description' => 'A la brasa, con menestra, arroz y patacones.'],
         ['slug' => 'bebidas', 'name' => 'Bebidas', 'kind' => 'bebidas', 'description' => 'Jugos naturales del día, bien fríos.'],
     ],
     'dishes' => [
@@ -81,6 +82,9 @@ return [
         ['category' => 'platos-fuertes', 'name' => 'Cazuela de mariscos', 'price' => 11.50, 'description' => 'Guiso espeso de verde y maní con mariscos, al horno de barro.', 'badge' => 'Picante opcional', 'options' => ['- Sin picante', '+ Arroz extra | 1.50', '+ Maduro frito | 1.25']],
         ['category' => 'platos-fuertes', 'name' => 'Encebollado', 'price' => 5.00, 'description' => 'Caldo de albacora con yuca y cebolla curtida, con chifles.', 'badge' => '', 'options' => ['- Sin cebolla', '+ Chifles extra | 1.00', '+ Pan | 0.50', '+ Doble albacora | 2.00']],
         ['category' => 'platos-fuertes', 'name' => 'Parrillada de mariscos para 2', 'price' => 28.00, 'description' => 'Langostinos, pulpo, calamar, pescado y conchas a la brasa, con chimichurri y dos acompañantes.', 'badge' => 'Para compartir', 'featured' => 1, 'options' => ['- Sin chimichurri', '- Sin pulpo', '+ Langostinos extra | 6.00', '+ Patacones extra | 1.50', '+ Ensalada fresca | 2.00']],
+        ['category' => 'asados', 'name' => 'Carne asada con menestra', 'price' => 9.50, 'description' => 'Lomo de res a la brasa con menestra de lenteja, arroz, patacones y chimichurri.', 'badge' => 'Nuevo', 'options' => ['- Sin menestra', '- Sin chimichurri', '- Sin patacones', '+ Huevo frito | 0.75', '+ Maduro frito | 1.00', '+ Porción de carne extra | 3.50']],
+        ['category' => 'asados', 'name' => 'Pollo asado', 'price' => 8.00, 'description' => 'Medio pollo a la brasa con arroz, menestra, ensalada y papas fritas.', 'badge' => '', 'options' => ['- Sin menestra', '- Sin ensalada', '+ Cambiar papas por patacones', '+ Huevo frito | 0.75']],
+        ['category' => 'asados', 'name' => 'Costillas BBQ', 'price' => 11.00, 'description' => 'Costillas de cerdo glaseadas en salsa BBQ, con arroz, menestra y maduro.', 'badge' => 'Para compartir', 'options' => ['- Sin salsa BBQ', '- Sin menestra', '+ Media porción de costillas | 4.50', '+ Maduro frito | 1.00']],
         ['category' => 'bebidas', 'name' => 'Jugo de maracuyá', 'price' => 2.00, 'description' => 'Natural, con o sin azúcar.', 'badge' => '', 'options' => ['- Sin azúcar', '- Sin hielo', '+ Jarra de 1 litro | 3.00']],
         ['category' => 'bebidas', 'name' => 'Limonada imperial', 'price' => 2.50, 'description' => 'Limón, hierbabuena y hielo frappé.', 'badge' => '', 'options' => ['- Sin azúcar', '- Sin hielo']],
         ['category' => 'bebidas', 'name' => 'Coco helado', 'price' => 2.50, 'description' => 'Agua de coco servida en el mismo coco.', 'badge' => '', 'options' => ['- Sin hielo']],
