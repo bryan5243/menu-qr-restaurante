@@ -7,7 +7,25 @@ require __DIR__ . '/../../src/admin.php';
 
 $pdo = require_admin('platos');
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
-$dish = ['id' => 0, 'category_id' => 0, 'name' => '', 'description' => '', 'price' => '', 'image' => '', 'badge' => '', 'available' => 1, 'featured' => 0, 'active' => 1, 'sort_order' => 0];
+$dish = ['id' => 0, 'category_id' => 0, 'name' => '', 'description' => '', 'price' => '', 'image' => '', 'badge' => '', 'available' => 1, 'featured' => 0, 'active' => 1, 'sort_order' => 0, 'options' => ''];
+
+/** Textos del formulario («Huevo frito | 0.75» por línea) al JSON de dishes.options. */
+function options_from_admin(string $remove, string $extras): string
+{
+    $lines = static fn (string $text): array => array_filter(array_map('trim', preg_split('/\R/u', $text)), 'strlen');
+    $parsed = [];
+    foreach ($lines($extras) as $line) {
+        // «Nombre | 0.75», o sin barra si el precio va al final con $ o con decimales («Huevo frito $0.75»).
+        if (preg_match('/^(.+?)\s*\|\s*\$?\s*(\d+(?:[.,]\d{1,2})?)?\s*$/u', $line, $m)
+            || preg_match('/^(.+?)\s+(?:\$\s*(\d+(?:[.,]\d{1,2})?)|(\d+[.,]\d{2}))\s*$/u', $line, $m)) {
+            $price = ($m[2] ?? '') !== '' ? $m[2] : ($m[3] ?? '0');
+            $parsed[] = ['name' => trim($m[1]), 'price' => (float) str_replace(',', '.', $price)];
+        } else {
+            $parsed[] = ['name' => trim($line, " |\t"), 'price' => 0];
+        }
+    }
+    return options_json($lines($remove), $parsed);
+}
 if ($id) {
     $statement = $pdo->prepare('SELECT * FROM dishes WHERE id = ?');
     $statement->execute([$id]);
@@ -38,17 +56,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'active' => isset($_POST['active']) ? 1 : 0,
         'sort_order' => (int) ($_POST['sort_order'] ?? 0),
         'image' => isset($_POST['remove_image']) ? '' : trim((string) ($_POST['image_url'] ?? $dish['image'])),
+        'options' => options_from_admin((string) ($_POST['opt_remove'] ?? ''), (string) ($_POST['opt_extras'] ?? '')),
     ]);
     try {
         $dish['image'] = save_upload('photo') ?? $dish['image'];
         if ($dish['name'] === '' || !in_array($dish['category_id'], array_map('intval', array_column($categories, 'id')), true)) {
             throw new RuntimeException('Escribe el nombre y elige la categoría.');
         }
-        $values = [$dish['category_id'], $dish['name'], $dish['description'], $dish['price'], $dish['image'], $dish['badge'], $dish['available'], $dish['featured'], $dish['active'], $dish['sort_order']];
+        $values = [$dish['category_id'], $dish['name'], $dish['description'], $dish['price'], $dish['image'], $dish['badge'], $dish['available'], $dish['featured'], $dish['active'], $dish['sort_order'], $dish['options'] === '' ? null : $dish['options']];
         if ($id) {
-            $pdo->prepare('UPDATE dishes SET category_id = ?, name = ?, description = ?, price = ?, image = ?, badge = ?, available = ?, featured = ?, active = ?, sort_order = ? WHERE id = ?')->execute([...$values, $id]);
+            $pdo->prepare('UPDATE dishes SET category_id = ?, name = ?, description = ?, price = ?, image = ?, badge = ?, available = ?, featured = ?, active = ?, sort_order = ?, options = ? WHERE id = ?')->execute([...$values, $id]);
         } else {
-            $pdo->prepare('INSERT INTO dishes (category_id, name, description, price, image, badge, available, featured, active, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')->execute([...$values, now()]);
+            $pdo->prepare('INSERT INTO dishes (category_id, name, description, price, image, badge, available, featured, active, sort_order, options, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')->execute([...$values, now()]);
             $id = insert_id($pdo, 'dishes');
         }
         flash('Plato guardado.');
@@ -58,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$opts = dish_options($dish);
 $kind = 'platos';
 foreach ($categories as $c) {
     if ((int) $c['id'] === (int) $dish['category_id']) {
@@ -84,6 +104,14 @@ admin_header($id ? 'Editar plato' : 'Nuevo plato', 'platos');
     <label class="a-check"><input type="checkbox" name="available" <?= (int) $dish['available'] ? 'checked' : '' ?>> Disponible hoy (desmárcalo si se agotó)</label>
     <label class="a-check"><input type="checkbox" name="featured" <?= (int) $dish['featured'] ? 'checked' : '' ?>> Mostrar en «Los favoritos de la casa»</label>
     <label class="a-check"><input type="checkbox" name="active" <?= (int) $dish['active'] ? 'checked' : '' ?>> Visible en el menú</label>
+  </section>
+  <section class="panel">
+    <h2>Opciones del plato</h2>
+    <p class="hint">El cliente las elige al pedir y llegan a cocina, por ejemplo «Sin menestra · + Huevo frito».</p>
+    <div class="a-grid-2">
+      <label>Se puede quitar <small>uno por línea: Menestra, Chimichurri, Cebolla…</small><textarea name="opt_remove" rows="5" placeholder="Menestra&#10;Chimichurri"><?= e(implode("\n", $opts['remove'])) ?></textarea></label>
+      <label>Adicionales <small>uno por línea con su precio: Huevo frito | 0.75 (0 = gratis)</small><textarea name="opt_extras" rows="5" placeholder="Huevo frito | 0.75&#10;Maduro frito | 1.00"><?= e(implode("\n", array_map(static fn ($x) => $x['name'] . ' | ' . number_format($x['price'], 2, '.', ''), $opts['extras']))) ?></textarea></label>
+    </div>
   </section>
   <section class="panel">
     <h2>Foto</h2>

@@ -45,5 +45,6 @@ function dish_payload(array $dish, string $kind): string
         'img' => image_src($dish['image'], 640, 480) ?: fallback_art($kind),
         'art' => fallback_art($kind),
         'ok' => $dish['available'] === 1,
+        'opts' => dish_options($dish),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP);
 }

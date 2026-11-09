@@ -79,14 +79,63 @@ function db(): ?PDO
         return null;
     }
 
+    require_once __DIR__ . '/install.php';
     // Modo demo: la primera visita crea las tablas y carga el restaurante de ejemplo.
-    if (demo_mode()) {
-        require_once __DIR__ . '/install.php';
-        if (!is_installed($pdo)) {
-            run_install($pdo, true);
+    if (demo_mode() && !is_installed($pdo)) {
+        run_install($pdo, true);
+    }
+    migrate_dish_options($pdo);
+    return $pdo;
+}
+
+/* ---------- Opciones por plato: ingredientes que se pueden quitar y adicionales con precio ---------- */
+
+const OPTIONS_MAX = 12;
+
+/** Convierte listas de «se puede quitar» y adicionales al JSON que se guarda en dishes.options ('' si no hay). */
+function options_json(array $remove, array $extras): string
+{
+    $clean = static fn ($name): string => trim(mb_substr(preg_replace('/\s+/u', ' ', (string) $name), 0, 40));
+    $outRemove = [];
+    foreach ($remove as $name) {
+        $name = $clean($name);
+        if ($name !== '' && !in_array($name, $outRemove, true) && count($outRemove) < OPTIONS_MAX) {
+            $outRemove[] = $name;
         }
     }
-    return $pdo;
+    $outExtras = [];
+    foreach ($extras as $extra) {
+        $name = $clean($extra['name'] ?? '');
+        if ($name !== '' && !in_array($name, array_column($outExtras, 'name'), true) && count($outExtras) < OPTIONS_MAX) {
+            $outExtras[] = ['name' => $name, 'price' => round(min(500, max(0, (float) ($extra['price'] ?? 0))), 2)];
+        }
+    }
+    if ($outRemove === [] && $outExtras === []) {
+        return '';
+    }
+    return json_encode(['remove' => $outRemove, 'extras' => $outExtras], JSON_UNESCAPED_UNICODE);
+}
+
+/** Opciones de un plato: ['remove' => [nombre…], 'extras' => [['name' => …, 'price' => …]…]]. */
+function dish_options(array $dish): array
+{
+    $data = json_decode((string) ($dish['options'] ?? ''), true);
+    $data = is_array($data) ? $data : [];
+    $decoded = json_decode(options_json((array) ($data['remove'] ?? []), (array) ($data['extras'] ?? [])), true);
+    return is_array($decoded) ? $decoded : ['remove' => [], 'extras' => []];
+}
+
+/** Texto para cocina: «Sin menestra, sin chimichurri · + Huevo frito». */
+function options_summary(array $remove, array $extras): string
+{
+    $parts = [];
+    if ($remove !== []) {
+        $parts[] = 'Sin ' . implode(', sin ', array_map(static fn ($n) => mb_strtolower(mb_substr($n, 0, 1)) . mb_substr($n, 1), $remove));
+    }
+    if ($extras !== []) {
+        $parts[] = '+ ' . implode(', + ', $extras);
+    }
+    return implode(' · ', $parts);
 }
 
 /** Id del último registro insertado (PostgreSQL necesita el nombre de la secuencia). */

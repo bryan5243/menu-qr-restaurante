@@ -54,7 +54,7 @@ function enabled_kinds(): array
  */
 function priced_lines(PDO $pdo, array $items): array
 {
-    $statement = $pdo->prepare('SELECT d.id, d.name, d.price, d.available FROM dishes d JOIN categories c ON c.id = d.category_id WHERE d.id = ? AND d.active = 1 AND c.active = 1');
+    $statement = $pdo->prepare('SELECT d.id, d.name, d.price, d.available, d.options FROM dishes d JOIN categories c ON c.id = d.category_id WHERE d.id = ? AND d.active = 1 AND c.active = 1');
     $lines = [];
     $subtotal = 0.0;
     foreach (array_slice($items, 0, 40) as $item) {
@@ -68,8 +68,22 @@ function priced_lines(PDO $pdo, array $items): array
         }
         $qty = max(1, min(50, (int) ($item['qty'] ?? 1)));
         $price = (float) $dish['price'];
+        // Opciones: solo se aceptan las que el plato tiene configuradas; el precio de los adicionales sale de la base.
+        $options = dish_options($dish);
+        $wanted = array_map('strval', (array) ($item['remove'] ?? []));
+        $remove = array_values(array_filter($options['remove'], static fn ($name) => in_array($name, $wanted, true)));
+        $wanted = array_map('strval', (array) ($item['extras'] ?? []));
+        $extras = [];
+        foreach ($options['extras'] as $extra) {
+            if (in_array($extra['name'], $wanted, true)) {
+                $extras[] = $extra['name'];
+                $price += (float) $extra['price'];
+            }
+        }
+        $price = round($price, 2);
         $subtotal += $price * $qty;
-        $lines[] = ['dish_id' => (int) $dish['id'], 'name' => $dish['name'], 'price' => $price, 'qty' => $qty, 'note' => trim(mb_substr((string) ($item['note'] ?? ''), 0, 160))];
+        $note = implode(' · ', array_filter([options_summary($remove, $extras), trim((string) ($item['note'] ?? ''))], 'strlen'));
+        $lines[] = ['dish_id' => (int) $dish['id'], 'name' => $dish['name'], 'price' => $price, 'qty' => $qty, 'note' => mb_substr($note, 0, 160)];
     }
     if ($lines === []) {
         throw new InvalidArgumentException('Tu pedido está vacío.');

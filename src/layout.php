@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const ASSET_VERSION = '1';
+const ASSET_VERSION = '2';
 
 function page_header(string $title, string $bodyClass = '', string $description = ''): void
 {

@@ -110,54 +110,73 @@ page_header('', 'page-menu' . ($mesa ? ' is-table' : ''));
 <main id="menu" class="menu">
   <?php if ($featured): ?>
     <section class="wrap menu-sec" id="favoritos" data-section>
-      <div class="sec-head">
+      <div class="carta-head">
+        <span class="carta-kicker"><?= icon('estrella') ?> Recomendados</span>
         <h2>Los favoritos de la casa</h2>
         <p>Lo que más piden nuestros clientes.</p>
       </div>
-      <div class="feat-row">
+      <div class="feat-grid">
         <?php foreach ($featured as $i => [$dish, $kind]): ?>
-          <article class="feat reveal" style="--i:<?= $i ?>" data-dish='<?= dish_payload($dish, $kind) ?>'>
+          <?php $hasOpts = dish_options($dish)['remove'] || dish_options($dish)['extras']; ?>
+          <article class="feat reveal<?= $dish['available'] ? '' : ' is-sold' ?>" style="--i:<?= $i % 4 ?>" data-dish='<?= dish_payload($dish, $kind) ?>'>
             <button class="feat-open" type="button" data-open aria-label="Ver <?= e($dish['name']) ?>">
               <span class="feat-img"><?= dish_img($dish['image'], $dish['name'], 320, 240, $kind) ?></span>
               <?php if ($dish['badge'] !== ''): ?><span class="badge"><?= e($dish['badge']) ?></span><?php endif; ?>
-            </button>
-            <div class="feat-body">
-              <h3><?= e($dish['name']) ?></h3>
-              <div class="feat-foot">
+              <span class="feat-body">
+                <span class="feat-name"><?= e($dish['name']) ?></span>
+                <?php if ($hasOpts): ?><small class="opt-hint">Personalizable</small><?php endif; ?>
                 <b class="price"><?= e(money($dish['price'])) ?></b>
-                <?php if ($dish['available']): ?>
-                  <button class="add" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
-                <?php else: ?><span class="sold">Agotado</span><?php endif; ?>
-              </div>
-            </div>
+              </span>
+            </button>
+            <?php if ($dish['available']): ?>
+              <button class="add add-feat" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
+            <?php else: ?><span class="sold sold-feat">Agotado</span><?php endif; ?>
           </article>
         <?php endforeach; ?>
       </div>
     </section>
   <?php endif; ?>
 
+  <div class="wrap carta-title">
+    <span class="carta-orn" aria-hidden="true"></span>
+    <h2>Nuestra carta</h2>
+    <span class="carta-orn" aria-hidden="true"></span>
+  </div>
+
   <?php foreach ($categories as $category): ?>
     <section class="wrap menu-sec" id="<?= e($category['slug']) ?>" data-section>
-      <div class="sec-head">
-        <h2><?= e($category['name']) ?></h2>
-        <?php if ($category['description'] !== ''): ?><p><?= e($category['description']) ?></p><?php endif; ?>
-      </div>
-      <div class="dish-list">
-        <?php foreach ($category['dishes'] as $dish): ?>
-          <article class="dish reveal<?= $dish['available'] ? '' : ' is-sold' ?>" data-dish='<?= dish_payload($dish, $category['kind']) ?>'>
-            <button class="dish-open" type="button" data-open>
-              <span class="dish-text">
-                <span class="dish-name"><?= e($dish['name']) ?><?php if ($dish['badge'] !== ''): ?> <span class="badge badge-soft"><?= e($dish['badge']) ?></span><?php endif; ?></span>
-                <span class="dish-desc"><?= e($dish['description']) ?></span>
-                <b class="price"><?= e(money($dish['price'])) ?></b>
-              </span>
-              <span class="dish-img"><?= dish_img($dish['image'], $dish['name'], 112, 112, $category['kind']) ?></span>
-            </button>
-            <?php if ($dish['available']): ?>
-              <button class="add add-float" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
-            <?php else: ?><span class="sold sold-float">Agotado</span><?php endif; ?>
-          </article>
-        <?php endforeach; ?>
+      <div class="carta">
+        <div class="carta-head">
+          <h2><?= e($category['name']) ?></h2>
+          <?php if ($category['description'] !== ''): ?><p><?= e($category['description']) ?></p><?php endif; ?>
+        </div>
+        <div class="dish-list">
+          <?php foreach ($category['dishes'] as $dish): ?>
+            <?php $hasOpts = dish_options($dish)['remove'] || dish_options($dish)['extras']; ?>
+            <article class="dish reveal<?= $dish['available'] ? '' : ' is-sold' ?>" data-dish='<?= dish_payload($dish, $category['kind']) ?>'>
+              <button class="dish-open" type="button" data-open>
+                <span class="dish-img"><?= dish_img($dish['image'], $dish['name'], 72, 72, $category['kind']) ?></span>
+                <span class="dish-text">
+                  <span class="dish-line">
+                    <span class="dish-name"><?= e($dish['name']) ?></span>
+                    <span class="leader" aria-hidden="true"></span>
+                    <b class="price"><?= e(money($dish['price'])) ?></b>
+                  </span>
+                  <span class="dish-desc"><?= e($dish['description']) ?></span>
+                  <?php if ($dish['badge'] !== '' || $hasOpts): ?>
+                    <span class="dish-tags">
+                      <?php if ($dish['badge'] !== ''): ?><span class="badge badge-soft"><?= e($dish['badge']) ?></span><?php endif; ?>
+                      <?php if ($hasOpts): ?><small class="opt-hint">Personalizable</small><?php endif; ?>
+                    </span>
+                  <?php endif; ?>
+                </span>
+              </button>
+              <?php if ($dish['available']): ?>
+                <button class="add add-row" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
+              <?php else: ?><span class="sold sold-row">Agotado</span><?php endif; ?>
+            </article>
+          <?php endforeach; ?>
+        </div>
       </div>
     </section>
   <?php endforeach; ?>
@@ -197,6 +216,14 @@ page_header('', 'page-menu' . ($mesa ? ' is-table' : ''));
       <span class="badge" data-ds-badge hidden></span>
       <h2 id="ds-name" data-ds-name></h2>
       <p data-ds-desc></p>
+      <fieldset class="opts" data-ds-remove-wrap hidden>
+        <legend>¿Quieres quitarle algo?</legend>
+        <div class="opt-chips" data-ds-remove></div>
+      </fieldset>
+      <fieldset class="opts" data-ds-extras-wrap hidden>
+        <legend>Adicionales</legend>
+        <div class="opt-list" data-ds-extras></div>
+      </fieldset>
       <label class="field">Indicaciones para cocina (opcional)
         <input type="text" maxlength="120" placeholder="Ej.: sin cebolla, bien picante" data-ds-note>
       </label>
