@@ -59,7 +59,7 @@ admin_header('Menú', 'platos');
           <img src="<?= e(image_src($dish['image'], 120, 120) ?: fallback_art($category['kind'])) ?>" alt="" width="60" height="60" loading="lazy" onerror="this.onerror=null;this.src='<?= e(fallback_art($category['kind'])) ?>'">
           <div class="a-dish-main">
             <a href="plato.php?id=<?= $dish['id'] ?>"><b><?= e($dish['name']) ?></b></a>
-            <small><?= $dish['badge'] !== '' ? e($dish['badge']) . ' · ' : '' ?><?= $dish['featured'] ? '★ Favorito · ' : '' ?><?= $dish['active'] ? 'Visible' : 'Oculto' ?></small>
+            <small><?= $dish['badge'] !== '' ? e($dish['badge']) . ' · ' : '' ?><?= $dish['featured'] ? '★ Favorito · ' : '' ?><?php $o = dish_options($dish); ?><?= $o['remove'] || $o['extras'] ? 'Con opciones · ' : '' ?><?= $dish['active'] ? 'Visible' : 'Oculto' ?></small>
           </div>
           <form method="post" class="a-price" data-ajax><?= csrf_field() ?><input type="hidden" name="id" value="<?= $dish['id'] ?>"><input type="hidden" name="action" value="price">
             <label class="sr-only" for="p<?= $dish['id'] ?>">Precio</label><span>$</span><input id="p<?= $dish['id'] ?>" name="price" value="<?= number_format($dish['price'], 2, '.', '') ?>" inputmode="decimal">

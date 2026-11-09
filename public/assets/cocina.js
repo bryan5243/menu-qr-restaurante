@@ -34,7 +34,7 @@
         head = `<li class="k-round${isNew ? ' is-new' : ''}">${round === 1 ? 'Primer pedido' : 'Ronda ' + round}${isNew ? ' · NUEVA' : ''}</li>`;
       }
       const old = o.rounds > 1 && it.round < o.rounds && (o.status === 'recibido' || o.status === 'preparando');
-      return head + `<li class="${old ? 'is-old' : ''}"><b>${it.qty}×</b> ${esc(it.name)}${it.opts ? `<span class="k-opts">${it.opts.split(' · ').map(o => `<i class="${o.startsWith('+') ? 'is-extra' : 'is-sin'}">${esc(o)}</i>`).join('')}</span>` : ''}${it.note ? `<em>${esc(it.note)}</em>` : ''}</li>`;
+      return head + `<li class="${old ? 'is-old' : ''}"><b>${it.qty}×</b> ${esc(it.name)}${it.note ? `<em>${esc(it.note)}</em>` : ''}</li>`;
     }).join('');
     const etaBtns = [10, 15, 20, 30, 45].map(m => `<button class="k-chip${m === K.eta ? ' is-default' : ''}" data-act="eta" data-min="${m}">${m} min</button>`).join('');
     let actions = '';

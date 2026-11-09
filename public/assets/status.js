@@ -55,7 +55,7 @@
     $('[data-status-items]').innerHTML = order.items.map(it => {
       let head = '';
       if (order.rounds > 1 && it.round !== round) { round = it.round; head = '<li class="round">' + (round === 1 ? 'Primer pedido' : 'Ronda ' + round) + '</li>'; }
-      return head + '<li><span>' + it.qty + ' × ' + esc(it.name) + (it.opts ? '<small class="opts">' + esc(it.opts) + '</small>' : '') + (it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span><span>' + money(it.qty * it.price) + '</span></li>';
+      return head + '<li><span>' + it.qty + ' × ' + esc(it.name) + (it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span><span>' + money(it.qty * it.price) + '</span></li>';
     }).join('');
     $('[data-status-total]').textContent = money(order.total);
     $$('[data-open-only]').forEach(el => { el.hidden = !order.open; });

@@ -180,7 +180,7 @@ function admin_header(string $title, string $active = '', string $bodyClass = ''
 <?php endif;
 }
 
-const ASSET_VERSION_ADMIN = '2';
+const ASSET_VERSION_ADMIN = '1';
 
 function admin_footer(array $scripts = []): void
 {
@@ -191,20 +191,6 @@ document.querySelectorAll('[data-confirm]').forEach(f => f.addEventListener('sub
 document.querySelectorAll('input[type=file][data-preview]').forEach(i => i.addEventListener('change', () => {
   const img = document.querySelector(i.dataset.preview); if (img && i.files[0]) { img.src = URL.createObjectURL(i.files[0]); img.hidden = false; }
 }));
-// Adicionales del plato: el precio solo aplica a «Adicional»; «+ Otra fila» copia una fila vacía.
-const optList = document.querySelector('[data-opt-list]');
-if (optList) {
-  const sync = row => { row.querySelector('.a-opt-price').hidden = row.querySelector('select').value === 'sin'; };
-  optList.addEventListener('change', e => { if (e.target.matches('select')) sync(e.target.closest('[data-opt]')); });
-  document.querySelector('[data-opt-add]').addEventListener('click', () => {
-    const rows = optList.querySelectorAll('[data-opt]');
-    if (rows.length >= 12) return;
-    const row = rows[rows.length - 1].cloneNode(true);
-    row.querySelectorAll('input').forEach(i => { i.value = ''; });
-    row.querySelector('select').value = 'extra'; sync(row);
-    optList.append(row); row.querySelector('input').focus();
-  });
-}
 </script>
 <?php foreach ($scripts as $script): ?><script src="<?= e($script) ?>?v=<?= ASSET_VERSION_ADMIN ?>" defer></script><?php endforeach; ?>
 </body>

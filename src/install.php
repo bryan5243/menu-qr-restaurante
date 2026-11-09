@@ -42,7 +42,7 @@ function schema_sql(string $driver): array
             featured SMALLINT NOT NULL DEFAULT 0,
             active SMALLINT NOT NULL DEFAULT 1,
             sort_order INT NOT NULL DEFAULT 0,
-            options VARCHAR(1000) NOT NULL DEFAULT '',
+            options TEXT NULL,
             created_at {DT} NULL
         )",
         "CREATE TABLE IF NOT EXISTS orders (
@@ -75,7 +75,6 @@ function schema_sql(string $driver): array
             price DECIMAL(10,2) NOT NULL DEFAULT 0,
             qty INT NOT NULL DEFAULT 1,
             note VARCHAR(160) NOT NULL DEFAULT '',
-            options VARCHAR(255) NOT NULL DEFAULT '',
             created_at {DT} NULL
         )",
         "CREATE TABLE IF NOT EXISTS reservations (
@@ -141,7 +140,6 @@ function run_install(PDO $pdo, bool $demoUsers = false): array
             }
         }
     }
-    migrate_schema($pdo);
     $log[] = 'Tablas creadas.';
 
     $seed = require ROOT . '/config/demo.php';
@@ -179,6 +177,43 @@ function seed_menu(PDO $pdo, array $seed): void
     }
     $dish = $pdo->prepare('INSERT INTO dishes (category_id, name, description, price, image, badge, available, featured, sort_order, options, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     foreach ($seed['dishes'] as $i => $d) {
-        $dish->execute([$ids[$d['category']], $d['name'], $d['description'], $d['price'], $d['image'] ?? '', $d['badge'] ?? '', $d['available'] ?? 1, $d['featured'] ?? 0, $i, implode("\n", $d['options'] ?? []), now()]);
+        $dish->execute([$ids[$d['category']], $d['name'], $d['description'], $d['price'], $d['image'] ?? '', $d['badge'] ?? '', $d['available'] ?? 1, $d['featured'] ?? 0, $i, seed_options($d), now()]);
+    }
+}
+
+/** Opciones de un plato de ejemplo (config/demo.php) en el formato que se guarda en dishes.options. */
+function seed_options(array $d): string
+{
+    return options_json($d['remove'] ?? [], array_map(static fn ($name, $price) => ['name' => $name, 'price' => $price], array_keys($d['extras'] ?? []), $d['extras'] ?? []));
+}
+
+/**
+ * Bases creadas antes de que existieran las opciones por plato: agrega la columna dishes.options
+ * y carga las opciones de ejemplo en los platos que conservan el nombre del menú de ejemplo.
+ */
+function migrate_dish_options(PDO $pdo): void
+{
+    try {
+        $pdo->query('SELECT options FROM dishes WHERE 1 = 0');
+        return;
+    } catch (PDOException) {
+        // Falta la columna (o la base todavía no está instalada).
+    }
+    if (!is_installed($pdo)) {
+        return;
+    }
+    try {
+        $pdo->exec('ALTER TABLE dishes ADD COLUMN options TEXT NULL');
+    } catch (PDOException $exception) {
+        error_log('Menú DB: ' . $exception->getMessage());
+        return;
+    }
+    $seed = require ROOT . '/config/demo.php';
+    $update = $pdo->prepare('UPDATE dishes SET options = ? WHERE name = ? AND options IS NULL');
+    foreach ($seed['dishes'] as $d) {
+        $json = seed_options($d);
+        if ($json !== '') {
+            $update->execute([$json, $d['name']]);
+        }
     }
 }

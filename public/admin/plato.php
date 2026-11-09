@@ -4,11 +4,28 @@ declare(strict_types=1);
 
 // Crear o editar un plato.
 require __DIR__ . '/../../src/admin.php';
-require_once __DIR__ . '/../../src/menu.php';
 
 $pdo = require_admin('platos');
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 $dish = ['id' => 0, 'category_id' => 0, 'name' => '', 'description' => '', 'price' => '', 'image' => '', 'badge' => '', 'available' => 1, 'featured' => 0, 'active' => 1, 'sort_order' => 0, 'options' => ''];
+
+/** Textos del formulario («Huevo frito | 0.75» por línea) al JSON de dishes.options. */
+function options_from_admin(string $remove, string $extras): string
+{
+    $lines = static fn (string $text): array => array_filter(array_map('trim', preg_split('/\R/u', $text)), 'strlen');
+    $parsed = [];
+    foreach ($lines($extras) as $line) {
+        // «Nombre | 0.75», o sin barra si el precio va al final con $ o con decimales («Huevo frito $0.75»).
+        if (preg_match('/^(.+?)\s*\|\s*\$?\s*(\d+(?:[.,]\d{1,2})?)?\s*$/u', $line, $m)
+            || preg_match('/^(.+?)\s+(?:\$\s*(\d+(?:[.,]\d{1,2})?)|(\d+[.,]\d{2}))\s*$/u', $line, $m)) {
+            $price = ($m[2] ?? '') !== '' ? $m[2] : ($m[3] ?? '0');
+            $parsed[] = ['name' => trim($m[1]), 'price' => (float) str_replace(',', '.', $price)];
+        } else {
+            $parsed[] = ['name' => trim($line, " |\t"), 'price' => 0];
+        }
+    }
+    return options_json($lines($remove), $parsed);
+}
 if ($id) {
     $statement = $pdo->prepare('SELECT * FROM dishes WHERE id = ?');
     $statement->execute([$id]);
@@ -20,25 +37,6 @@ if (!$categories) {
     redirect('categorias.php');
 }
 $error = null;
-
-/** Filas de opciones que llegan del formulario: tipo, nombre y precio. */
-function posted_options(): array
-{
-    $out = [];
-    $types = (array) ($_POST['opt_type'] ?? []);
-    $names = (array) ($_POST['opt_name'] ?? []);
-    $prices = (array) ($_POST['opt_price'] ?? []);
-    foreach ($names as $i => $name) {
-        $name = trim(str_replace(['|', "\n", "\r"], ' ', (string) $name));
-        if ($name === '') {
-            continue;
-        }
-        $type = ($types[$i] ?? '') === 'sin' ? 'sin' : 'extra';
-        $line = ($type === 'sin' ? '- ' : '+ ') . $name . ($type === 'extra' ? ' | ' . str_replace(',', '.', (string) ($prices[$i] ?? '0')) : '');
-        $out[] = $line;
-    }
-    return dish_options(implode("\n", $out));
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     check_post();
@@ -57,15 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'featured' => isset($_POST['featured']) ? 1 : 0,
         'active' => isset($_POST['active']) ? 1 : 0,
         'sort_order' => (int) ($_POST['sort_order'] ?? 0),
-        'options' => dish_options_text(posted_options()),
         'image' => isset($_POST['remove_image']) ? '' : trim((string) ($_POST['image_url'] ?? $dish['image'])),
+        'options' => options_from_admin((string) ($_POST['opt_remove'] ?? ''), (string) ($_POST['opt_extras'] ?? '')),
     ]);
     try {
         $dish['image'] = save_upload('photo') ?? $dish['image'];
         if ($dish['name'] === '' || !in_array($dish['category_id'], array_map('intval', array_column($categories, 'id')), true)) {
             throw new RuntimeException('Escribe el nombre y elige la categoría.');
         }
-        $values = [$dish['category_id'], $dish['name'], $dish['description'], $dish['price'], $dish['image'], $dish['badge'], $dish['available'], $dish['featured'], $dish['active'], $dish['sort_order'], $dish['options']];
+        $values = [$dish['category_id'], $dish['name'], $dish['description'], $dish['price'], $dish['image'], $dish['badge'], $dish['available'], $dish['featured'], $dish['active'], $dish['sort_order'], $dish['options'] === '' ? null : $dish['options']];
         if ($id) {
             $pdo->prepare('UPDATE dishes SET category_id = ?, name = ?, description = ?, price = ?, image = ?, badge = ?, available = ?, featured = ?, active = ?, sort_order = ?, options = ? WHERE id = ?')->execute([...$values, $id]);
         } else {
@@ -79,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$opts = dish_options($dish);
 $kind = 'platos';
 foreach ($categories as $c) {
     if ((int) $c['id'] === (int) $dish['category_id']) {
@@ -106,19 +105,13 @@ admin_header($id ? 'Editar plato' : 'Nuevo plato', 'platos');
     <label class="a-check"><input type="checkbox" name="featured" <?= (int) $dish['featured'] ? 'checked' : '' ?>> Mostrar en «Los favoritos de la casa»</label>
     <label class="a-check"><input type="checkbox" name="active" <?= (int) $dish['active'] ? 'checked' : '' ?>> Visible en el menú</label>
   </section>
-  <section class="panel a-options">
-    <h2>Adicionales y «sin…»</h2>
-    <p class="hint">Lo que el cliente puede quitar (gratis), como <i>Sin menestra</i> o <i>Sin chimichurri</i>, y lo que puede agregar con su precio, como <i>Patacones extra $1.50</i>. Pon $0 si el cambio no cuesta. Deja vacío lo que no uses.</p>
-    <div class="a-opt-list" data-opt-list>
-      <?php $rows = dish_options((string) $dish['options']); for ($i = 0, $n = max(count($rows) + 2, 4); $i < min($n, DISH_OPTIONS_MAX); $i++): $o = $rows[$i] ?? ['type' => 'extra', 'name' => '', 'price' => 0]; ?>
-        <div class="a-opt" data-opt>
-          <select name="opt_type[]" aria-label="Tipo"><option value="sin"<?= $o['type'] === 'sin' ? ' selected' : '' ?>>Quitar</option><option value="extra"<?= $o['type'] === 'extra' ? ' selected' : '' ?>>Adicional</option></select>
-          <input name="opt_name[]" value="<?= e($o['name']) ?>" maxlength="60" placeholder="Ej.: Sin menestra o Patacones extra" aria-label="Nombre">
-          <label class="a-opt-price"<?= $o['type'] === 'sin' ? ' hidden' : '' ?>>$ <input name="opt_price[]" value="<?= $o['price'] > 0 ? e(number_format($o['price'], 2, '.', '')) : '' ?>" inputmode="decimal" placeholder="0.00" aria-label="Precio"></label>
-        </div>
-      <?php endfor; ?>
+  <section class="panel">
+    <h2>Opciones del plato</h2>
+    <p class="hint">El cliente las elige al pedir y llegan a cocina, por ejemplo «Sin menestra · + Huevo frito».</p>
+    <div class="a-grid-2">
+      <label>Se puede quitar <small>uno por línea: Menestra, Chimichurri, Cebolla…</small><textarea name="opt_remove" rows="5" placeholder="Menestra&#10;Chimichurri"><?= e(implode("\n", $opts['remove'])) ?></textarea></label>
+      <label>Adicionales <small>uno por línea con su precio: Huevo frito | 0.75 (0 = gratis)</small><textarea name="opt_extras" rows="5" placeholder="Huevo frito | 0.75&#10;Maduro frito | 1.00"><?= e(implode("\n", array_map(static fn ($x) => $x['name'] . ' | ' . number_format($x['price'], 2, '.', ''), $opts['extras']))) ?></textarea></label>
     </div>
-    <button class="a-btn a-btn-sm" type="button" data-opt-add>+ Otra fila</button>
   </section>
   <section class="panel">
     <h2>Foto</h2>

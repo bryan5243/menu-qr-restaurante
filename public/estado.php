@@ -46,7 +46,7 @@ $waText = '';
 if ($whatsapp !== '') {
     $lines = ['Hola, hice el pedido #' . (int) $order['id'] . ' (' . order_label($order) . ') en el menú digital:'];
     foreach ($items as $item) {
-        $lines[] = '• ' . $item['qty'] . ' x ' . $item['name'] . ($item['opts'] !== '' ? ' [' . $item['opts'] . ']' : '') . ($item['note'] !== '' ? ' (' . $item['note'] . ')' : '');
+        $lines[] = '• ' . $item['qty'] . ' x ' . $item['name'] . ($item['note'] !== '' ? ' (' . $item['note'] . ')' : '');
     }
     $lines[] = 'Total: ' . money((float) $order['total']);
     $lines[] = absolute_status_url($order['code']);

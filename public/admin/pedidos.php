@@ -63,7 +63,7 @@ admin_header('Pedidos', 'pedidos');
       </summary>
       <table class="a-table"><tbody>
         <?php foreach ($list as $it): ?>
-          <tr><td><?= (int) $o['rounds'] > 1 ? '<small>R' . $it['round'] . '</small> ' : '' ?><?= e($it['name']) ?><?= $it['opts'] !== '' ? '<br><small><b>' . e($it['opts']) . '</b></small>' : '' ?><?= $it['note'] !== '' ? '<br><small>' . e($it['note']) . '</small>' : '' ?></td><td>×<?= $it['qty'] ?></td><td><?= e(money($it['qty'] * $it['price'])) ?></td></tr>
+          <tr><td><?= (int) $o['rounds'] > 1 ? '<small>R' . $it['round'] . '</small> ' : '' ?><?= e($it['name']) ?><?= $it['note'] !== '' ? '<br><small>' . e($it['note']) . '</small>' : '' ?></td><td>×<?= $it['qty'] ?></td><td><?= e(money($it['qty'] * $it['price'])) ?></td></tr>
         <?php endforeach; ?>
         <?php if ((float) $o['delivery_fee'] > 0): ?><tr><td>Envío</td><td></td><td><?= e(money((float) $o['delivery_fee'])) ?></td></tr><?php endif; ?>
       </tbody></table>

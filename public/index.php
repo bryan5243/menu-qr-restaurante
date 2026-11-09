@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
-require_once __DIR__ . '/../src/menu.php';
+require __DIR__ . '/../src/menu.php';
 require __DIR__ . '/../src/orders.php';
 require __DIR__ . '/../src/layout.php';
 
@@ -109,21 +109,22 @@ page_header('', 'page-menu' . ($mesa ? ' is-table' : ''));
 
 <main id="menu" class="menu">
   <?php if ($featured): ?>
-    <section class="wrap menu-sec favs" id="favoritos" data-section>
-      <header class="sec-head">
-        <p class="sec-kicker"><?= icon('estrella') ?> Recomendados</p>
+    <section class="wrap menu-sec" id="favoritos" data-section>
+      <div class="carta-head">
+        <span class="carta-kicker"><?= icon('estrella') ?> Recomendados</span>
         <h2>Los favoritos de la casa</h2>
         <p>Lo que más piden nuestros clientes.</p>
-      </header>
+      </div>
       <div class="feat-grid">
         <?php foreach ($featured as $i => [$dish, $kind]): ?>
-          <article class="feat reveal<?= $dish['available'] ? '' : ' is-sold' ?>" style="--i:<?= $i ?>" data-dish='<?= dish_payload($dish, $kind) ?>'>
+          <?php $hasOpts = dish_options($dish)['remove'] || dish_options($dish)['extras']; ?>
+          <article class="feat reveal<?= $dish['available'] ? '' : ' is-sold' ?>" style="--i:<?= $i % 4 ?>" data-dish='<?= dish_payload($dish, $kind) ?>'>
             <button class="feat-open" type="button" data-open aria-label="Ver <?= e($dish['name']) ?>">
-              <span class="feat-img"><?= dish_img($dish['image'], $dish['name'], 480, 360, $kind) ?></span>
+              <span class="feat-img"><?= dish_img($dish['image'], $dish['name'], 320, 240, $kind) ?></span>
               <?php if ($dish['badge'] !== ''): ?><span class="badge"><?= e($dish['badge']) ?></span><?php endif; ?>
               <span class="feat-body">
                 <span class="feat-name"><?= e($dish['name']) ?></span>
-                <span class="feat-desc"><?= e($dish['description']) ?></span>
+                <?php if ($hasOpts): ?><small class="opt-hint">Personalizable</small><?php endif; ?>
                 <b class="price"><?= e(money($dish['price'])) ?></b>
               </span>
             </button>
@@ -136,44 +137,49 @@ page_header('', 'page-menu' . ($mesa ? ' is-table' : ''));
     </section>
   <?php endif; ?>
 
-  <div class="wrap">
-    <div class="carta">
-      <p class="carta-brand"><span><?= e(setting('name')) ?></span></p>
-      <?php foreach ($categories as $ci => $category): ?>
-        <section class="carta-sec" id="<?= e($category['slug']) ?>" data-section>
-          <header class="carta-head">
-            <span class="carta-num" aria-hidden="true"><?= str_pad((string) ($ci + 1), 2, '0', STR_PAD_LEFT) ?></span>
-            <h2><?= e($category['name']) ?></h2>
-            <?php if ($category['description'] !== ''): ?><p><?= e($category['description']) ?></p><?php endif; ?>
-          </header>
-          <div class="carta-list">
-            <?php foreach ($category['dishes'] as $dish): $hasOpts = dish_options($dish['options']) !== []; ?>
-              <article class="dish reveal<?= $dish['available'] ? '' : ' is-sold' ?>" data-dish='<?= dish_payload($dish, $category['kind']) ?>'>
-                <button class="dish-open" type="button" data-open>
-                  <span class="dish-img"><?= dish_img($dish['image'], $dish['name'], 120, 120, $category['kind']) ?></span>
-                  <span class="dish-text">
-                    <span class="dish-line"><span class="dish-name"><?= e($dish['name']) ?></span><span class="dish-dots" aria-hidden="true"></span><b class="price"><?= e(money($dish['price'])) ?></b></span>
-                    <?php if ($dish['description'] !== ''): ?><span class="dish-desc"><?= e($dish['description']) ?></span><?php endif; ?>
-                    <?php if ($dish['badge'] !== '' || $hasOpts || !$dish['available']): ?>
-                      <span class="dish-tags">
-                        <?php if (!$dish['available']): ?><span class="sold">Agotado hoy</span><?php endif; ?>
-                        <?php if ($dish['badge'] !== ''): ?><span class="badge badge-soft"><?= e($dish['badge']) ?></span><?php endif; ?>
-                        <?php if ($hasOpts && $dish['available']): ?><span class="tag-opts"><?= icon('opciones') ?> Personalízalo</span><?php endif; ?>
-                      </span>
-                    <?php endif; ?>
-                  </span>
-                </button>
-                <?php if ($dish['available']): ?>
-                  <button class="add add-row" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
-                <?php endif; ?>
-              </article>
-            <?php endforeach; ?>
-          </div>
-        </section>
-      <?php endforeach; ?>
-      <p class="carta-end" aria-hidden="true">~ ✦ ~</p>
-    </div>
+  <div class="wrap carta-title">
+    <span class="carta-orn" aria-hidden="true"></span>
+    <h2>Nuestra carta</h2>
+    <span class="carta-orn" aria-hidden="true"></span>
   </div>
+
+  <?php foreach ($categories as $category): ?>
+    <section class="wrap menu-sec" id="<?= e($category['slug']) ?>" data-section>
+      <div class="carta">
+        <div class="carta-head">
+          <h2><?= e($category['name']) ?></h2>
+          <?php if ($category['description'] !== ''): ?><p><?= e($category['description']) ?></p><?php endif; ?>
+        </div>
+        <div class="dish-list">
+          <?php foreach ($category['dishes'] as $dish): ?>
+            <?php $hasOpts = dish_options($dish)['remove'] || dish_options($dish)['extras']; ?>
+            <article class="dish reveal<?= $dish['available'] ? '' : ' is-sold' ?>" data-dish='<?= dish_payload($dish, $category['kind']) ?>'>
+              <button class="dish-open" type="button" data-open>
+                <span class="dish-img"><?= dish_img($dish['image'], $dish['name'], 72, 72, $category['kind']) ?></span>
+                <span class="dish-text">
+                  <span class="dish-line">
+                    <span class="dish-name"><?= e($dish['name']) ?></span>
+                    <span class="leader" aria-hidden="true"></span>
+                    <b class="price"><?= e(money($dish['price'])) ?></b>
+                  </span>
+                  <span class="dish-desc"><?= e($dish['description']) ?></span>
+                  <?php if ($dish['badge'] !== '' || $hasOpts): ?>
+                    <span class="dish-tags">
+                      <?php if ($dish['badge'] !== ''): ?><span class="badge badge-soft"><?= e($dish['badge']) ?></span><?php endif; ?>
+                      <?php if ($hasOpts): ?><small class="opt-hint">Personalizable</small><?php endif; ?>
+                    </span>
+                  <?php endif; ?>
+                </span>
+              </button>
+              <?php if ($dish['available']): ?>
+                <button class="add add-row" type="button" data-add aria-label="Agregar <?= e($dish['name']) ?>"><?= icon('mas') ?></button>
+              <?php else: ?><span class="sold sold-row">Agotado</span><?php endif; ?>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </section>
+  <?php endforeach; ?>
 
   <section class="wrap info" id="visitanos">
     <div class="info-card reveal">
@@ -210,12 +216,16 @@ page_header('', 'page-menu' . ($mesa ? ' is-table' : ''));
       <span class="badge" data-ds-badge hidden></span>
       <h2 id="ds-name" data-ds-name></h2>
       <p data-ds-desc></p>
-      <div class="ds-opts" data-ds-opts hidden>
-        <fieldset class="ds-group" data-ds-group="sin"><legend>¿Le quitamos algo? <small>Gratis</small></legend><div class="ds-choices"></div></fieldset>
-        <fieldset class="ds-group" data-ds-group="extra"><legend>Adicionales <small>Opcional</small></legend><div class="ds-choices"></div></fieldset>
-      </div>
+      <fieldset class="opts" data-ds-remove-wrap hidden>
+        <legend>¿Quieres quitarle algo?</legend>
+        <div class="opt-chips" data-ds-remove></div>
+      </fieldset>
+      <fieldset class="opts" data-ds-extras-wrap hidden>
+        <legend>Adicionales</legend>
+        <div class="opt-list" data-ds-extras></div>
+      </fieldset>
       <label class="field">Indicaciones para cocina (opcional)
-        <input type="text" maxlength="120" placeholder="Ej.: bien picante, término medio" data-ds-note>
+        <input type="text" maxlength="120" placeholder="Ej.: sin cebolla, bien picante" data-ds-note>
       </label>
       <div class="ds-foot">
         <div class="qty" data-ds-qty>
